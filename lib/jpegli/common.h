@@ -22,7 +22,7 @@
 
 /* clang-format off */
 #include <stdio.h>
-#include <jpeglib.h>
+#include "/opt/homebrew/opt/jpeg-turbo/include/jpeglib.h"
 /* clang-format on */
 
 #if defined(__cplusplus) || defined(c_plusplus)

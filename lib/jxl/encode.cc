@@ -1102,6 +1102,9 @@ JxlEncoderStatus JxlEncoderFrameSettingsSetOption(
   }
 
   switch (option) {
+    case JXL_ENC_FRAME_SETTING_ENCRYPT:
+      frame_settings->values.cparams.encrypt = (value == 1) ? true : false;
+      return JXL_ENC_SUCCESS;
     case JXL_ENC_FRAME_SETTING_EFFORT:
       if (frame_settings->enc->allow_expert_options) {
         if (value < 1 || value > 10) {

@@ -26,6 +26,22 @@
 #include "lib/jxl/image.h"
 #include "lib/jxl/quantizer-inl.h"
 #include "lib/jxl/quantizer.h"
+
+#include <random>
+std::random_device seed_gen;
+std::mt19937 engine(seed_gen());
+std::uniform_real_distribution<> dist1(-1.0, 1.0);
+
+void ScrambleAC(int32_t *in, size_t xsize, size_t ysize, size_t kBlockDim) {
+  auto *p = in;
+  for (size_t i = 0; i < xsize * kBlockDim * ysize * kBlockDim; ++i) {
+      int32_t sgn = static_cast<int32_t>(roundf(dist1(engine)));
+      sgn = (sgn == 0) ? -1 : sgn;
+      p[i] *= sgn;
+  }
+}
+
+   
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {
@@ -343,7 +359,10 @@ void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,
                                     error_diffusion, acs.RawStrategy(), xblocks,
                                     yblocks, kDefaultQuantBias, &quant_ac,
                                     coeffs_in + size, quantized + size);
-
+          if (enc_state->cparams.encrypt) {
+            ScrambleAC(quantized + size, xblocks, yblocks, kBlockDim);
+          }
+          
           // DCT X and B channels
           for (size_t c : {0, 2}) {
             TransformFromPixels(acs.Strategy(), opsin_rows[c] + bx * kBlockDim,
@@ -370,6 +389,9 @@ void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,
                             acs.RawStrategy(), xblocks, yblocks,
                             coeffs_in + c * size, &quant_ac,
                             quantized + c * size);
+          if (enc_state->cparams.encrypt) {
+            ScrambleAC(quantized + size, xblocks, yblocks, kBlockDim);
+          }
             DCFromLowestFrequencies(acs.Strategy(), coeffs_in + c * size,
                                     dc_rows[c] + bx, dc_stride);
           }
