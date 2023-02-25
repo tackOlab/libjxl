@@ -156,6 +156,7 @@ void DequantBlock(const AcStrategy& acs, float inv_global_scale, int quant,
                          dequant_matrices, size, k, x_cc_mul, b_cc_mul, biases,
                          qblock, block);
   }
+
   for (size_t c = 0; c < 3; c++) {
     LowestFrequenciesFromDC(acs.Strategy(), dc_row[c] + sbx[c], dc_stride,
                             block + c * size);
@@ -340,6 +341,17 @@ Status DecodeGroupImpl(GetBlock* JXL_RESTRICT get_block,
         if (draw == kDontDraw) {
           bx += llf_x;
           continue;
+        }
+
+        if (dec_state->decrypt == true) {
+          // Perceputual Decryption
+          for (size_t c = 0; c < 3; ++c) {
+            auto* p = qblock[c].ptr16;
+            for (size_t i = 0; i < size; ++i) {
+              int32_t sgn = myrand(i);
+              p[i] *= sgn;
+            }
+          }
         }
 
         if (JXL_UNLIKELY(decoded->IsJPEG())) {

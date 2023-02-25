@@ -637,6 +637,8 @@ JXL_EXPORT size_t JxlDecoderReleaseInput(JxlDecoder* dec);
  */
 JXL_EXPORT void JxlDecoderCloseInput(JxlDecoder* dec);
 
+JXL_EXPORT void JxlDecoderSetDecryption(JxlDecoder* dec, JXL_BOOL decrypt);
+
 /**
  * Outputs the basic image information, such as image dimensions, bit depth and
  * all other JxlBasicInfo fields, if available.

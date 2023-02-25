@@ -198,6 +198,9 @@ bool DecodeImageJXL(const uint8_t* bytes, size_t bytes_size,
     fprintf(stderr, "Decoder failed to set input\n");
     return false;
   }
+
+  JxlDecoderSetDecryption(dec, dparams.decrypt);
+
   uint32_t progression_index = 0;
   bool codestream_done = false;
   BoxProcessor boxes(dec);

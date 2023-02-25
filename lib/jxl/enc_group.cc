@@ -35,9 +35,10 @@ std::uniform_real_distribution<> dist1(-1.0, 1.0);
 void ScrambleAC(int32_t *in, size_t xsize, size_t ysize, size_t kBlockDim) {
   auto *p = in;
   for (size_t i = 0; i < xsize * kBlockDim * ysize * kBlockDim; ++i) {
-      int32_t sgn = static_cast<int32_t>(roundf(dist1(engine)));
-      sgn = (sgn == 0) ? -1 : sgn;
+      int32_t sgn = jxl::myrand(i);
+      // sgn = (sgn == 0) ? 1 : sgn;
       p[i] *= sgn;
+      // p[i] = (i % 2 == 0) ? p[i] : -p[i];
   }
 }
 
@@ -256,11 +257,21 @@ void QuantizeRoundtripYBlockAC(const Quantizer& quantizer,
   HWY_CAPPED(float, kDCTBlockSize) df;
   HWY_CAPPED(int32_t, kDCTBlockSize) di;
   const auto inv_qac = Set(df, quantizer.inv_quant_ac(*quant));
+
+  // HWY_CAPPED(int32_t, kDCTBlockSize) ds;
+  // int32_t fs[4];
+  // for (int i = 0; i < 4; ++i) {
+  //   fs[i] = static_cast<int32_t>(myrand());
+  // }
+  // const auto dsgn = Load(ds, fs);
+
   for (size_t k = 0; k < kDCTBlockSize * xsize * ysize; k += Lanes(df)) {
     const auto quant = Load(di, quantized + k);
+    // auto vvv = Mul(quant, dsgn);
     const auto adj_quant = AdjustQuantBias(di, 1, quant, biases);
     const auto dequantm = Load(df, dequant_matrix + k);
     Store(Mul(Mul(adj_quant, dequantm), inv_qac), df, inout + k);
+    // Store(Mul(Mul(Mul(adj_quant, dequantm), inv_qac), dsgn), df, inout + k);
   }
 }
 
@@ -390,7 +401,7 @@ void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,
                             coeffs_in + c * size, &quant_ac,
                             quantized + c * size);
           if (enc_state->cparams.encrypt) {
-            ScrambleAC(quantized + size, xblocks, yblocks, kBlockDim);
+            ScrambleAC(quantized + c * size, xblocks, yblocks, kBlockDim);
           }
             DCFromLowestFrequencies(acs.Strategy(), coeffs_in + c * size,
                                     dc_rows[c] + bx, dc_stride);
