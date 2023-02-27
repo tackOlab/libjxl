@@ -35,7 +35,7 @@
 
 namespace jxl {
 
-static int myrand(int i) {
+static inline int myrand(int i) {
   constexpr int max_n = 1;
   constexpr int min_n = 0;
   int new_n;
