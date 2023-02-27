@@ -34,7 +34,7 @@ std::uniform_real_distribution<> dist1(-1.0, 1.0);
 
 void ScrambleAC(int32_t *in, size_t xsize, size_t ysize, size_t kBlockDim) {
   auto *p = in;
-  for (size_t i = 0; i < xsize * kBlockDim * ysize * kBlockDim; ++i) {
+  for (size_t i = 1; i < xsize * kBlockDim * ysize * kBlockDim; ++i) {
       int32_t sgn = jxl::myrand(i);
       // sgn = (sgn == 0) ? 1 : sgn;
       p[i] *= sgn;
@@ -371,6 +371,7 @@ void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,
                                     yblocks, kDefaultQuantBias, &quant_ac,
                                     coeffs_in + size, quantized + size);
           if (enc_state->cparams.encrypt) {
+            srand(1 * xsize_blocks * ysize_blocks + by * xsize_blocks + bx);
             ScrambleAC(quantized + size, xblocks, yblocks, kBlockDim);
           }
           
@@ -401,6 +402,7 @@ void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,
                             coeffs_in + c * size, &quant_ac,
                             quantized + c * size);
           if (enc_state->cparams.encrypt) {
+            srand(c * xsize_blocks * ysize_blocks + by * xsize_blocks + bx);
             ScrambleAC(quantized + c * size, xblocks, yblocks, kBlockDim);
           }
             DCFromLowestFrequencies(acs.Strategy(), coeffs_in + c * size,

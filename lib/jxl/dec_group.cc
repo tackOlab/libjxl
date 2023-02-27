@@ -347,7 +347,8 @@ Status DecodeGroupImpl(GetBlock* JXL_RESTRICT get_block,
           // Perceputual Decryption
           for (size_t c = 0; c < 3; ++c) {
             auto* p = qblock[c].ptr16;
-            for (size_t i = 0; i < size; ++i) {
+            srand(c * xsize_blocks * ysize_blocks + by * xsize_blocks + bx);
+            for (size_t i = 1; i < size; ++i) {
               int32_t sgn = myrand(i);
               p[i] *= sgn;
             }

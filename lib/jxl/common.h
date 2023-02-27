@@ -252,7 +252,12 @@ constexpr int32_t myrand_matrix[4096] = {
     -1, 1,  -1, -1, 1,  -1, 1,  1,  1,  1,  1,  1,  -1, -1, -1, 1,  1,  1,  -1,
     1,  1,  1,  1,  1,  -1, -1, 1,  -1, -1, 1};
 static int myrand(int i) {
-  return myrand_matrix[i % 4096];
+  int max_n = 1;
+  int min_n = 0;
+  int new_n;
+  new_n = ((rand() % (max_n + 1 - min_n)) + min_n);
+  return new_n * 2 - 1;
+  // return myrand_matrix[i % 4096];
 }
 // Some enums and typedefs used by more than one header file.
 
