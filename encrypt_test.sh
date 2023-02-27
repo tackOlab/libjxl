@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-EFFORT=${3:-7}
+EFFORT=${2:-7}
 
 DISTANCE[1]=0.01
 DISTANCE[2]=0.05
@@ -25,11 +25,11 @@ for d in ${DISTANCE[@]}
 do
 	printf $d
 	printf ", "
-	ENCOUT=work/outi$d.jxl
+	ENCOUT=work/out$d.jxl
 	NOENCOUT=work/noenc$d.jxl
-	$ENC $1 $ENCOUT -d $2 --pencrypt --num_threads=0 -d $d -e $EFFORT --quiet
+	$ENC $1 $ENCOUT --pencrypt --num_threads=0 -d $d -e $EFFORT --quiet
 	printf ", "
-	$ENC $1 $NOENCOUT -d $2 --num_threads=0 -d $d -e $EFFORT --quiet
+	$ENC $1 $NOENCOUT --num_threads=0 -d $d -e $EFFORT --quiet
 	printf "\n"
 done
 
@@ -40,7 +40,7 @@ for d in ${DISTANCE[@]}
 do
 	printf $d
 	printf ", "
-	ENCOUT=work/outi$d.jxl
+	ENCOUT=work/out$d.jxl
 	DECENCOUT=work/enc$d.ppm
 	$DEC $ENCOUT $DECENCOUT --num_threads=0 --quiet
 	$PSNRCMD $1 $DECENCOUT
@@ -53,7 +53,7 @@ for d in ${DISTANCE[@]}
 do
 	printf $d
 	printf ", "
-	ENCOUT=work/outi$d.jxl
+	ENCOUT=work/out$d.jxl
 	NOENCOUT=work/noenc$d.jxl
 	DECDECOUT=work/dec$d.ppm
 	DECNOENCOUT=work/noenc$d.ppm
