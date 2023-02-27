@@ -1099,5 +1099,6 @@ int main(int argc, char** argv) {
       fprintf(stderr, "\n");
     }
   }
+  printf("%zu", compressed.size());
   return EXIT_SUCCESS;
 }
