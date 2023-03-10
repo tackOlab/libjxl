@@ -19,9 +19,12 @@
 #include <setjmp.h>
 /* clang-format on */
 
+#include "lib/jpegli/common.h"
+
 namespace jpegli {
 
-// TODO(eustas): use common.h?
+// We define this here as well to make sure that the *_api_test.cc tests only
+// use the public API and therefore we don't include any *_internal.h headers.
 template <typename T1, typename T2>
 constexpr inline T1 DivCeil(T1 a, T2 b) {
   return (a + b - 1) / b;
@@ -105,6 +108,8 @@ struct TestImage {
   size_t ysize = 0;
   J_COLOR_SPACE color_space = JCS_RGB;
   size_t components = 3;
+  JpegliDataType data_type = JPEGLI_TYPE_UINT8;
+  JpegliEndianness endianness = JPEGLI_NATIVE_ENDIAN;
   std::vector<uint8_t> pixels;
   std::vector<std::vector<uint8_t>> raw_data;
   std::vector<std::vector<JCOEF>> coeffs;
@@ -198,6 +203,9 @@ bool EncodeWithJpegli(const TestImage& input, const CompressParams& jparams,
 void DecodeWithLibjpeg(const CompressParams& jparams,
                        const std::vector<uint8_t>& compressed,
                        JpegIOMode output_mode, TestImage* output);
+
+void VerifyOutputImage(const TestImage& input, const TestImage& output,
+                       size_t start_line, size_t num_lines, double max_rms);
 
 void VerifyOutputImage(const TestImage& input, const TestImage& output,
                        double max_rms);

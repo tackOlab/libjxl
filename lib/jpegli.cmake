@@ -8,7 +8,6 @@ include(jxl_lists.cmake)
 
 set(JPEGLI_INTERNAL_LIBS
   hwy
-  jxl-static
   Threads::Threads
   ${ATOMICS_LIBRARIES}
 )
@@ -55,6 +54,7 @@ foreach (TESTFILE IN LISTS JPEGXL_INTERNAL_JPEGLI_TESTS)
     GTest::Main
     ${JPEG_LIBRARIES}
   )
+  set_target_properties(${TESTNAME} PROPERTIES LINK_FLAGS "${JPEGXL_COVERAGE_LINK_FLAGS}")
   # Output test targets in the test directory.
   set_target_properties(${TESTNAME} PROPERTIES PREFIX "tests/")
   if (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
