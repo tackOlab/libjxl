@@ -9,7 +9,10 @@ add_library(box STATIC EXCLUDE_FROM_ALL
 )
 # This library can be included into position independent binaries.
 set_target_properties(box PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
-jxl_link_libraries(box jxl_base-obj)
+target_link_libraries(box
+  jxl-static
+  jxl_threads-static
+)
 target_include_directories(box
   PRIVATE
   "${PROJECT_SOURCE_DIR}"
@@ -22,5 +25,4 @@ add_executable(box_list
 target_link_libraries(box_list
   box
 )
-set_target_properties(box_list PROPERTIES LINK_FLAGS "${JPEGXL_COVERAGE_LINK_FLAGS}")
 endif()  # JPEGXL_ENABLE_DEVTOOLS

@@ -4,5 +4,5 @@ cc_library(
     name = "box",
     srcs = ["box/box.cc"],
     hdrs = ["box/box.h"],
-    deps = ["//lib:base"],
+    deps = ["//lib:jpegxl_private"],
 )

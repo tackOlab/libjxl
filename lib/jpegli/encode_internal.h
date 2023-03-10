@@ -39,6 +39,7 @@ struct JPEGHuffmanCode {
 const int kJPEGMaxCorrectionBits = 1u << 16;
 
 constexpr int kDefaultProgressiveLevel = 2;
+constexpr float kDefaultQuantFieldMax = 0.575f;
 
 struct HuffmanCodeTable {
   int depth[256];
@@ -54,23 +55,10 @@ struct ScanCodingInfo {
 
 typedef int16_t coeff_t;
 
-// Handles the packing of bits into output bytes.
-struct JpegBitWriter {
-  j_compress_ptr cinfo;
-  std::vector<uint8_t> buffer;
-  uint8_t* data;
-  size_t pos;
-  uint64_t put_buffer;
-  int put_bits;
-  bool healthy;
-};
-
 }  // namespace jpegli
 
 struct jpeg_comp_master {
-  jpegli::RowBuffer<float> input_buffer[jpegli::kMaxComponents];
-  jpegli::RowBuffer<float> downsampler_output[jpegli::kMaxComponents];
-  jpegli::RowBuffer<float>* raw_data[jpegli::kMaxComponents];
+  std::array<jpegli::RowBuffer<float>, jpegli::kMaxComponents> input_buffer;
   float distance = 1.0;
   bool force_baseline = true;
   bool xyb_mode = false;
@@ -84,31 +72,13 @@ struct jpeg_comp_master {
   uint8_t* next_marker_byte = nullptr;
   JpegliDataType data_type = JPEGLI_TYPE_UINT8;
   JpegliEndianness endianness = JPEGLI_NATIVE_ENDIAN;
-  void (*input_method)(const uint8_t* row_in, size_t len,
-                       float* row_out[jpegli::kMaxComponents]);
-  void (*color_transform)(float* row[jpegli::kMaxComponents], size_t len);
-  void (*downsample_method[jpegli::kMaxComponents])(
-      float* rows_in[MAX_SAMP_FACTOR], size_t len, float* row_out);
-  float* quant_mul[jpegli::kMaxComponents];
-  float zero_bias_mul[jpegli::kMaxComponents];
-  int h_factor[jpegli::kMaxComponents];
-  int v_factor[jpegli::kMaxComponents];
-  std::vector<jpegli::JPEGHuffmanCode> huffman_codes;
+  std::array<jpegli::coeff_t*, jpegli::kMaxComponents> coefficients;
   jpegli::HuffmanCodeTable huff_tables[8];
   std::array<jpegli::HuffmanCodeTable, jpegli::kMaxHuffmanTables> dc_huff_table;
   std::array<jpegli::HuffmanCodeTable, jpegli::kMaxHuffmanTables> ac_huff_table;
-  float* diff_buffer;
-  jpegli::RowBuffer<float> fuzzy_erosion_tmp;
-  jpegli::RowBuffer<float> pre_erosion;
   jpegli::RowBuffer<float> quant_field;
+  float quant_field_max = jpegli::kDefaultQuantFieldMax;
   jvirt_barray_ptr* coeff_buffers = nullptr;
-  size_t next_iMCU_row;
-  size_t last_dht_index;
-  size_t last_restart_interval;
-  JCOEF last_dc_coeff[MAX_COMPS_IN_SCAN];
-  jpegli::JpegBitWriter bw;
-  float* dct_buffer;
-  JCOEF* coeff_block;
 };
 
 #endif  // LIB_JPEGLI_ENCODE_INTERNAL_H_

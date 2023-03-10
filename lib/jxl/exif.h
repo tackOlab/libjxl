@@ -9,8 +9,7 @@
 // Basic parsing of Exif (just enough for the render-impacting things
 // like orientation)
 
-#include <jxl/codestream_header.h>
-
+#include "jxl/codestream_header.h"
 #include "lib/jxl/base/padded_bytes.h"
 #include "lib/jxl/image_metadata.h"
 

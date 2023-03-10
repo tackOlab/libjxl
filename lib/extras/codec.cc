@@ -5,9 +5,8 @@
 
 #include "lib/extras/codec.h"
 
-#include <jxl/decode.h>
-#include <jxl/types.h>
-
+#include "jxl/decode.h"
+#include "jxl/types.h"
 #include "lib/extras/packed_image.h"
 #include "lib/jxl/base/padded_bytes.h"
 #include "lib/jxl/base/status.h"

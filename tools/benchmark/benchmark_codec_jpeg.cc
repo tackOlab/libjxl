@@ -69,10 +69,6 @@ class JPEGCodec : public ImageCodec {
       progressive_id_ = strtol(param.substr(1).c_str(), nullptr, 10);
       return true;
     }
-    if (param == "fix") {
-      fix_codes_ = true;
-      return true;
-    }
 #if JPEGXL_ENABLE_JPEGLI
     if (param == "xyb") {
       xyb_mode_ = true;
@@ -178,7 +174,6 @@ class JPEGCodec : public ImageCodec {
       settings.use_adaptive_quantization = enable_adaptive_quant_;
       settings.libjpeg_quality = libjpeg_quality_;
       settings.libjpeg_chroma_subsampling = libjpeg_chroma_subsampling_;
-      settings.optimize_coding = !fix_codes_;
       const double start = Now();
       JXL_RETURN_IF_ERROR(extras::EncodeJpeg(ppf, settings, pool, compressed));
       const double end = Now();
@@ -200,9 +195,6 @@ class JPEGCodec : public ImageCodec {
       }
       if (progressive_id_ >= 0) {
         encoder->SetOption("progressive", std::to_string(progressive_id_));
-      }
-      if (fix_codes_) {
-        encoder->SetOption("optimize", "OFF");
       }
       const double start = Now();
       JXL_RETURN_IF_ERROR(encoder->Encode(ppf, &encoded, pool));
@@ -246,7 +238,6 @@ class JPEGCodec : public ImageCodec {
   std::string jpeg_encoder_ = "libjpeg";
   std::string chroma_subsampling_;
   int progressive_id_ = -1;
-  bool fix_codes_ = false;
   bool enc_quality_set_ = false;
 #if JPEGXL_ENABLE_JPEGLI
   bool xyb_mode_ = false;

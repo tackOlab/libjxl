@@ -15,9 +15,9 @@
 #ifndef JXL_DECODE_CXX_H_
 #define JXL_DECODE_CXX_H_
 
-#include <jxl/decode.h>
-
 #include <memory>
+
+#include "jxl/decode.h"
 
 #if !(defined(__cplusplus) || defined(c_plusplus))
 #error "This a C++ only header. Use jxl/decode.h from C sources."

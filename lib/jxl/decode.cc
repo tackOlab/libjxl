@@ -3,8 +3,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include <jxl/decode.h>
-#include <jxl/types.h>
+#include "jxl/decode.h"
 
 #include <algorithm>
 #include <array>
@@ -13,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "jxl/types.h"
 #include "lib/jxl/base/byte_order.h"
 #include "lib/jxl/base/span.h"
 #include "lib/jxl/base/status.h"

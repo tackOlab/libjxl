@@ -7,21 +7,21 @@
 
 #include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/error.h"
-#include "lib/jpegli/huffman.h"
-#include "lib/jxl/base/bits.h"
+#include "lib/jxl/enc_cluster.h"
+#include "lib/jxl/enc_huffman_tree.h"
 
 namespace jpegli {
 namespace {
 
-float HistogramCost(const Histogram& histo) {
+float HistogramCost(const jxl::Histogram& histo) {
   std::vector<uint32_t> counts(kJpegHuffmanAlphabetSize + 1);
   std::vector<uint8_t> depths(kJpegHuffmanAlphabetSize + 1);
   for (size_t i = 0; i < kJpegHuffmanAlphabetSize; ++i) {
-    counts[i] = histo.count[i];
+    counts[i] = histo.data_[i];
   }
   counts[kJpegHuffmanAlphabetSize] = 1;
-  CreateHuffmanTree(counts.data(), counts.size(), kJpegHuffmanMaxBitLength,
-                    &depths[0]);
+  jxl::CreateHuffmanTree(counts.data(), counts.size(), kJpegHuffmanMaxBitLength,
+                         &depths[0]);
   size_t header_bits = (1 + kJpegHuffmanMaxBitLength) * 8;
   size_t data_bits = 0;
   for (size_t i = 0; i < kJpegHuffmanAlphabetSize; ++i) {
@@ -32,39 +32,36 @@ float HistogramCost(const Histogram& histo) {
   }
   return header_bits + data_bits;
 }
-
-void AddHistograms(const Histogram& a, const Histogram& b, Histogram* c) {
-  for (size_t i = 0; i < kJpegHuffmanAlphabetSize; ++i) {
-    c->count[i] = a.count[i] + b.count[i];
-  }
-}
-
-bool IsEmptyHistogram(const Histogram& histo) {
-  for (size_t i = 0; i < kJpegHuffmanAlphabetSize; ++i) {
-    if (histo.count[i]) return false;
-  }
-  return true;
-}
-
 }  // namespace
 
-void ClusterJpegHistograms(const Histogram* histograms, size_t num,
+void ClusterJpegHistograms(const Histogram* histo_data, size_t num,
                            JpegClusteredHistograms* clusters) {
-  clusters->histogram_indexes.resize(num);
+  std::vector<jxl::Histogram> histograms;
+  for (size_t idx = 0; idx < num; ++idx) {
+    jxl::Histogram histo;
+    histo.data_.resize(kJpegHuffmanAlphabetSize);
+    for (size_t i = 0; i < histo.data_.size(); ++i) {
+      histo.data_[i] = histo_data[idx].count[i];
+      histo.total_count_ += histo.data_[i];
+    }
+    histograms.push_back(histo);
+  }
+  clusters->histogram_indexes.resize(histograms.size());
   std::vector<uint32_t> slot_histograms;
   std::vector<float> slot_costs;
-  for (size_t i = 0; i < num; ++i) {
-    const Histogram& cur = histograms[i];
-    if (IsEmptyHistogram(cur)) {
+  for (size_t i = 0; i < histograms.size(); ++i) {
+    const jxl::Histogram& cur = histograms[i];
+    if (cur.total_count_ == 0) {
       continue;
     }
     float best_cost = HistogramCost(cur);
     size_t best_slot = slot_histograms.size();
     for (size_t j = 0; j < slot_histograms.size(); ++j) {
       size_t prev_idx = slot_histograms[j];
-      const Histogram& prev = clusters->histograms[prev_idx];
-      Histogram combined;
-      AddHistograms(prev, cur, &combined);
+      const jxl::Histogram& prev = clusters->histograms[prev_idx];
+      jxl::Histogram combined;
+      combined.AddHistogram(prev);
+      combined.AddHistogram(cur);
       float combined_cost = HistogramCost(combined);
       float cost = combined_cost - slot_costs[j];
       if (cost < best_cost) {
@@ -91,8 +88,7 @@ void ClusterJpegHistograms(const Histogram* histograms, size_t num,
     } else {
       // Merge this histogram with a previous one.
       size_t histogram_index = slot_histograms[best_slot];
-      const Histogram& prev = clusters->histograms[histogram_index];
-      AddHistograms(prev, cur, &clusters->histograms[histogram_index]);
+      clusters->histograms[histogram_index].AddHistogram(cur);
       clusters->histogram_indexes[i] = histogram_index;
       JXL_ASSERT(clusters->slot_ids[histogram_index] == best_slot);
       slot_costs[best_slot] += best_cost;
@@ -100,15 +96,15 @@ void ClusterJpegHistograms(const Histogram* histograms, size_t num,
   }
 }
 
-void BuildJpegHuffmanCode(const Histogram& histo, JPEGHuffmanCode* huff) {
+void BuildJpegHuffmanCode(const jxl::Histogram& histo, JPEGHuffmanCode* huff) {
   std::vector<uint32_t> counts(kJpegHuffmanAlphabetSize + 1);
   std::vector<uint8_t> depths(kJpegHuffmanAlphabetSize + 1);
   for (size_t j = 0; j < kJpegHuffmanAlphabetSize; ++j) {
-    counts[j] = histo.count[j];
+    counts[j] = histo.data_[j];
   }
   counts[kJpegHuffmanAlphabetSize] = 1;
-  CreateHuffmanTree(counts.data(), counts.size(), kJpegHuffmanMaxBitLength,
-                    &depths[0]);
+  jxl::CreateHuffmanTree(counts.data(), counts.size(), kJpegHuffmanMaxBitLength,
+                         &depths[0]);
   std::fill(std::begin(huff->counts), std::end(huff->counts), 0);
   std::fill(std::begin(huff->values), std::end(huff->values), 0);
   for (size_t i = 0; i <= kJpegHuffmanAlphabetSize; ++i) {
@@ -127,7 +123,7 @@ void BuildJpegHuffmanCode(const Histogram& histo, JPEGHuffmanCode* huff) {
   }
 }
 
-void AddJpegHuffmanCode(const Histogram& histogram, size_t slot_id,
+void AddJpegHuffmanCode(const jxl::Histogram& histogram, size_t slot_id,
                         std::vector<JPEGHuffmanCode>* huff_codes) {
   JPEGHuffmanCode huff_code;
   huff_code.slot_id = slot_id;
@@ -182,7 +178,8 @@ static JXL_INLINE void ProcessEndOfBand(DCTState* s, size_t new_refinement_bits,
 }
 
 bool ProcessDCTBlockSequential(const coeff_t* coeffs, Histogram* dc_histo,
-                               Histogram* ac_histo, coeff_t* last_dc_coeff) {
+                               Histogram* ac_histo, int num_zero_runs,
+                               coeff_t* last_dc_coeff) {
   coeff_t temp2;
   coeff_t temp;
   temp2 = coeffs[0];
@@ -220,6 +217,10 @@ bool ProcessDCTBlockSequential(const coeff_t* coeffs, Histogram* dc_histo,
     ++ac_histo->count[symbol];
     r = 0;
   }
+  for (int i = 0; i < num_zero_runs; ++i) {
+    ++ac_histo->count[0xf0];
+    r -= 16;
+  }
   if (r > 0) {
     ++ac_histo->count[0];
   }
@@ -228,7 +229,8 @@ bool ProcessDCTBlockSequential(const coeff_t* coeffs, Histogram* dc_histo,
 
 bool ProcessDCTBlockProgressive(const coeff_t* coeffs, Histogram* dc_histo,
                                 Histogram* ac_histo, int Ss, int Se, int Al,
-                                DCTState* s, coeff_t* last_dc_coeff) {
+                                int num_zero_runs, DCTState* s,
+                                coeff_t* last_dc_coeff) {
   bool eob_run_allowed = Ss > 0;
   coeff_t temp2;
   coeff_t temp;
@@ -277,6 +279,13 @@ bool ProcessDCTBlockProgressive(const coeff_t* coeffs, Histogram* dc_histo,
     int symbol = (r << 4u) + nbits;
     ++ac_histo->count[symbol];
     r = 0;
+  }
+  if (num_zero_runs > 0) {
+    ProcessFlush(s);
+    for (int i = 0; i < num_zero_runs; ++i) {
+      ++ac_histo->count[0xf0];
+      r -= 16;
+    }
   }
   if (r > 0) {
     ProcessEndOfBand(s, 0, ac_histo);
@@ -370,19 +379,7 @@ bool ProcessScan(j_compress_ptr cinfo,
   const int Se = scan_info->Se;
   constexpr coeff_t kDummyBlock[DCTSIZE2] = {0};
 
-  JBLOCKARRAY ba[MAX_COMPS_IN_SCAN];
   for (int mcu_y = 0; mcu_y < MCU_rows; ++mcu_y) {
-    for (int i = 0; i < scan_info->comps_in_scan; ++i) {
-      int comp_idx = scan_info->component_index[i];
-      jpeg_component_info* comp = &cinfo->comp_info[comp_idx];
-      int n_blocks_y = is_interleaved ? comp->v_samp_factor : 1;
-      int by0 = mcu_y * n_blocks_y;
-      int block_rows_left = comp->height_in_blocks - by0;
-      int max_block_rows = std::min(n_blocks_y, block_rows_left);
-      ba[i] = (*cinfo->mem->access_virt_barray)(
-          reinterpret_cast<j_common_ptr>(cinfo), m->coeff_buffers[comp_idx],
-          by0, max_block_rows, false);
-    }
     for (int mcu_x = 0; mcu_x < MCUs_per_row; ++mcu_x) {
       // Possibly emit a restart marker.
       if (restart_interval > 0 && restarts_to_go == 0) {
@@ -394,6 +391,7 @@ bool ProcessScan(j_compress_ptr cinfo,
       for (int i = 0; i < scan_info->comps_in_scan; ++i) {
         int comp_idx = scan_info->component_index[i];
         jpeg_component_info* comp = &cinfo->comp_info[comp_idx];
+        coeff_t* coeffs = m->coefficients[comp_idx];
         int histo_idx = *histo_index + i;
         Histogram* dc_histo = &dc_histograms[histo_idx];
         Histogram* ac_histo = &ac_histograms[histo_idx];
@@ -403,20 +401,21 @@ bool ProcessScan(j_compress_ptr cinfo,
           for (int ix = 0; ix < n_blocks_x; ++ix) {
             size_t block_y = mcu_y * n_blocks_y + iy;
             size_t block_x = mcu_x * n_blocks_x + ix;
-            const coeff_t* block;
+            size_t block_idx = block_y * comp->width_in_blocks + block_x;
+            size_t num_zero_runs = 0;
+            const coeff_t* block = &coeffs[block_idx << 6];
             if (block_x >= comp->width_in_blocks ||
                 block_y >= comp->height_in_blocks) {
               block = kDummyBlock;
-            } else {
-              block = &ba[i][iy][block_x][0];
             }
             bool ok;
             if (!is_progressive) {
               ok = ProcessDCTBlockSequential(block, dc_histo, ac_histo,
-                                             last_dc_coeff + i);
+                                             num_zero_runs, last_dc_coeff + i);
             } else if (Ah == 0) {
               ok = ProcessDCTBlockProgressive(block, dc_histo, ac_histo, Ss, Se,
-                                              Al, &s, last_dc_coeff + i);
+                                              Al, num_zero_runs, &s,
+                                              last_dc_coeff + i);
             } else {
               ok = ProcessRefinementBits(block, ac_histo, Ss, Se, Al, &s);
             }
@@ -571,13 +570,12 @@ void AddStandardHuffmanTables(j_compress_ptr cinfo, bool is_dc) {
   }
 }
 
-void CopyHuffmanCodes(j_compress_ptr cinfo) {
-  jpeg_comp_master* m = cinfo->master;
+void CopyHuffmanCodes(j_compress_ptr cinfo,
+                      std::vector<JPEGHuffmanCode>* huffman_codes) {
   for (int c = 0; c < cinfo->num_components; ++c) {
     jpeg_component_info* comp = &cinfo->comp_info[c];
-    CopyHuffmanTable(cinfo, comp->dc_tbl_no, /*is_dc=*/true, &m->huffman_codes);
-    CopyHuffmanTable(cinfo, comp->ac_tbl_no, /*is_dc=*/false,
-                     &m->huffman_codes);
+    CopyHuffmanTable(cinfo, comp->dc_tbl_no, /*is_dc=*/true, huffman_codes);
+    CopyHuffmanTable(cinfo, comp->ac_tbl_no, /*is_dc=*/false, huffman_codes);
   }
   for (int i = 0; i < cinfo->num_scans; ++i) {
     const jpeg_scan_info* si = &cinfo->scan_info[i];
@@ -588,7 +586,7 @@ void CopyHuffmanCodes(j_compress_ptr cinfo) {
       sci.ac_tbl_idx[j] = cinfo->comp_info[ci].ac_tbl_no + 4;
     }
     if (i == 0) {
-      sci.num_huffman_codes = m->huffman_codes.size();
+      sci.num_huffman_codes = huffman_codes->size();
     }
     cinfo->master->scan_coding_info.emplace_back(std::move(sci));
   }
@@ -609,8 +607,8 @@ size_t RestartIntervalForScan(j_compress_ptr cinfo, size_t scan_index) {
   }
 }
 
-void OptimizeHuffmanCodes(j_compress_ptr cinfo) {
-  jpeg_comp_master* m = cinfo->master;
+void OptimizeHuffmanCodes(j_compress_ptr cinfo,
+                          std::vector<JPEGHuffmanCode>* huffman_codes) {
   // Gather histograms.
   size_t num_histo = 0;
   for (int i = 0; i < cinfo->num_scans; ++i) {
@@ -636,13 +634,13 @@ void OptimizeHuffmanCodes(j_compress_ptr cinfo) {
   for (size_t i = 0; i < dc_clusters.histograms.size(); ++i) {
     if (i >= 4) break;
     JXL_ASSERT(dc_clusters.slot_ids[i] == i);
-    AddJpegHuffmanCode(dc_clusters.histograms[i], i, &m->huffman_codes);
+    AddJpegHuffmanCode(dc_clusters.histograms[i], i, huffman_codes);
     dc_slot_histograms.push_back(i);
   }
   for (size_t i = 0; i < ac_clusters.histograms.size(); ++i) {
     if (i >= 4) break;
     JXL_ASSERT(ac_clusters.slot_ids[i] == i);
-    AddJpegHuffmanCode(ac_clusters.histograms[i], 0x10 + i, &m->huffman_codes);
+    AddJpegHuffmanCode(ac_clusters.histograms[i], 0x10 + i, huffman_codes);
     ac_slot_histograms.push_back(i);
   }
 
@@ -654,13 +652,13 @@ void OptimizeHuffmanCodes(j_compress_ptr cinfo) {
     ScanCodingInfo sci;
     for (int c = 0; c < cinfo->scan_info[i].comps_in_scan; ++c) {
       SetJpegHuffmanCode(dc_clusters, histogram_id, 0, dc_slot_histograms,
-                         &sci.dc_tbl_idx[c], &m->huffman_codes);
+                         &sci.dc_tbl_idx[c], huffman_codes);
       SetJpegHuffmanCode(ac_clusters, histogram_id, 0x10, ac_slot_histograms,
-                         &sci.ac_tbl_idx[c], &m->huffman_codes);
+                         &sci.ac_tbl_idx[c], huffman_codes);
       ++histogram_id;
     }
-    sci.num_huffman_codes = m->huffman_codes.size() - num_huffman_codes_sent;
-    num_huffman_codes_sent = m->huffman_codes.size();
+    sci.num_huffman_codes = huffman_codes->size() - num_huffman_codes_sent;
+    num_huffman_codes_sent = huffman_codes->size();
     cinfo->master->scan_coding_info.emplace_back(std::move(sci));
   }
 }

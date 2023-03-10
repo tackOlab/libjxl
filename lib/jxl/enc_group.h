@@ -11,12 +11,11 @@
 
 #include "lib/jxl/base/status.h"
 #include "lib/jxl/enc_bit_writer.h"
-#include "lib/jxl/image.h"
+#include "lib/jxl/enc_cache.h"
 
 namespace jxl {
 
 struct AuxOut;
-struct PassesEncoderState;
 
 // Fills DC
 void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,

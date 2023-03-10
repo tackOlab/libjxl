@@ -115,36 +115,37 @@ struct YCbCrChromaSubsampling : public Fields {
   }
 
   bool Is444() const {
-    return HShift(0) == 0 && VShift(0) == 0 &&  // Cb
-           HShift(2) == 0 && VShift(2) == 0 &&  // Cr
-           HShift(1) == 0 && VShift(1) == 0;    // Y
+    for (size_t c : {0, 2}) {
+      if (channel_mode_[c] != channel_mode_[1]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   bool Is420() const {
-    return HShift(0) == 1 && VShift(0) == 1 &&  // Cb
-           HShift(2) == 1 && VShift(2) == 1 &&  // Cr
-           HShift(1) == 0 && VShift(1) == 0;    // Y
+    return channel_mode_[0] == 1 && channel_mode_[1] == 0 &&
+           channel_mode_[2] == 1;
   }
 
   bool Is422() const {
-    return HShift(0) == 1 && VShift(0) == 0 &&  // Cb
-           HShift(2) == 1 && VShift(2) == 0 &&  // Cr
-           HShift(1) == 0 && VShift(1) == 0;    // Y
+    for (size_t c : {0, 2}) {
+      if (kHShift[channel_mode_[c]] == kHShift[channel_mode_[1]] + 1 &&
+          kVShift[channel_mode_[c]] == kVShift[channel_mode_[1]]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   bool Is440() const {
-    return HShift(0) == 0 && VShift(0) == 1 &&  // Cb
-           HShift(2) == 0 && VShift(2) == 1 &&  // Cr
-           HShift(1) == 0 && VShift(1) == 0;    // Y
-  }
-
-  std::string DebugString() const {
-    if (Is444()) return "444";
-    if (Is420()) return "420";
-    if (Is422()) return "422";
-    if (Is440()) return "440";
-    return "cs" + std::to_string(channel_mode_[0]) +
-           std::to_string(channel_mode_[1]) + std::to_string(channel_mode_[2]);
+    for (size_t c : {0, 2}) {
+      if (kHShift[channel_mode_[c]] == kHShift[channel_mode_[1]] &&
+          kVShift[channel_mode_[c]] == kVShift[channel_mode_[1]] + 1) {
+        return false;
+      }
+    }
+    return true;
   }
 
  private:

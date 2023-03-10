@@ -6,6 +6,8 @@
 #ifndef PLUGINS_GIMP_FILE_JXL_SAVE_H_
 #define PLUGINS_GIMP_FILE_JXL_SAVE_H_
 
+#include "jxl/encode.h"
+#include "jxl/encode_cxx.h"
 #include "plugins/gimp/common.h"
 
 namespace jxl {

@@ -5,8 +5,7 @@
 
 #include "lib/extras/dec/color_hints.h"
 
-#include <jxl/encode.h>
-
+#include "jxl/encode.h"
 #include "lib/extras/dec/color_description.h"
 #include "lib/jxl/base/file_io.h"
 

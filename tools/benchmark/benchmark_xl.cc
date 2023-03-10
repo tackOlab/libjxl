@@ -3,7 +3,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-#include <jxl/decode.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -18,6 +17,7 @@
 #include <utility>
 #include <vector>
 
+#include "jxl/decode.h"
 #include "lib/extras/codec.h"
 #include "lib/extras/dec/color_hints.h"
 #include "lib/extras/time.h"

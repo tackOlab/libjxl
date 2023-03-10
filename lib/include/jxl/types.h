@@ -13,9 +13,10 @@
 #ifndef JXL_TYPES_H_
 #define JXL_TYPES_H_
 
-#include <jxl/jxl_export.h>
 #include <stddef.h>
 #include <stdint.h>
+
+#include "jxl/jxl_export.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {

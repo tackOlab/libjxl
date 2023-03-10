@@ -36,8 +36,6 @@
  *
  */
 
-#include <jxl/codestream_header.h>
-#include <jxl/encode.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -45,6 +43,8 @@
 #include <utility>
 #include <vector>
 
+#include "jxl/codestream_header.h"
+#include "jxl/encode.h"
 #include "lib/jxl/base/byte_order.h"
 #include "lib/jxl/base/compiler_specific.h"
 #include "lib/jxl/base/printf_macros.h"

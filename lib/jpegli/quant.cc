@@ -13,7 +13,6 @@
 #include "lib/jpegli/common.h"
 #include "lib/jpegli/encode_internal.h"
 #include "lib/jpegli/error.h"
-#include "lib/jpegli/memory_manager.h"
 #include "lib/jxl/base/byte_order.h"
 #include "lib/jxl/base/status.h"
 
@@ -446,9 +445,6 @@ static const float kBaseQuantMatrixStd[] = {
     99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f, 99.0f,  //
 };
 
-constexpr float kZeroBiasMulXYB[] = {0.5f, 0.5f, 0.5f};
-constexpr float kZeroBiasMulYCbCr[] = {0.7f, 1.0f, 0.8f};
-
 constexpr unsigned char kCICPTagSignature[4] = {0x63, 0x69, 0x63, 0x70};
 constexpr size_t kCICPTagSize = 12;
 constexpr uint8_t kTransferFunctionPQ = 16;
@@ -533,18 +529,17 @@ float DistanceToLinearQuality(float distance) {
 
 void FinalizeQuantMatrices(j_compress_ptr cinfo) {
   jpeg_comp_master* m = cinfo->master;
-  const bool xyb = m->xyb_mode && cinfo->jpeg_color_space == JCS_RGB;
 
   // Global scale is chosen in a way that butteraugli 3-norm matches libjpeg
   // with the same quality setting. Fitted for quality 90 on jyrki31 corpus.
-  constexpr float kGlobalScaleXYB = 1.44563150f;
-  constexpr float kGlobalScaleYCbCr = 1.73480749f;
+  constexpr float kGlobalScaleXYB = 0.86747522f;
+  constexpr float kGlobalScaleYCbCr = 1.03148720f;
 
   float ac_scale, dc_scale;
   const float* base_quant_matrix;
 
-  if (xyb) {
-    ac_scale = kGlobalScaleXYB * m->distance;
+  if (cinfo->jpeg_color_space == JCS_RGB && m->xyb_mode) {
+    ac_scale = kGlobalScaleXYB * m->distance / m->quant_field_max;
     dc_scale = kGlobalScaleXYB / InitialQuantDC(m->distance);
     base_quant_matrix = kBaseQuantMatrixXYB;
   } else if (cinfo->jpeg_color_space == JCS_YCbCr && !m->use_std_tables &&
@@ -566,7 +561,7 @@ void FinalizeQuantMatrices(j_compress_ptr cinfo) {
     } else if (cicp_tf == kTransferFunctionHLG) {
       global_scale *= .5f;
     }
-    ac_scale = global_scale * m->distance;
+    ac_scale = global_scale * m->distance / m->quant_field_max;
     dc_scale = global_scale / InitialQuantDC(m->distance);
     base_quant_matrix = kBaseQuantMatrixYCbCr;
   } else {
@@ -599,26 +594,6 @@ void FinalizeQuantMatrices(j_compress_ptr cinfo) {
       (*qtable)->quantval[k] = std::max(1, std::min(qval, quant_max));
     }
     (*qtable)->sent_table = FALSE;
-  }
-  // Compute quantization multupliers from the quant table values.
-  for (int c = 0; c < cinfo->num_components; ++c) {
-    int quant_idx = cinfo->comp_info[c].quant_tbl_no;
-    JQUANT_TBL* quant_table = cinfo->quant_tbl_ptrs[quant_idx];
-    m->quant_mul[c] = Allocate<float>(cinfo, DCTSIZE2, JPOOL_IMAGE_ALIGNED);
-    for (size_t k = 0; k < DCTSIZE2; k++) {
-      int val = quant_table->quantval[k];
-      if (val == 0) {
-        JPEGLI_ERROR("Invalid quantval 0.");
-      }
-      m->quant_mul[c][k] = 8.0f / val;
-    }
-  }
-  for (int c = 0; c < cinfo->num_components; ++c) {
-    if (c < 3 && m->distance <= 1.0f) {
-      m->zero_bias_mul[c] = xyb ? kZeroBiasMulXYB[c] : kZeroBiasMulYCbCr[c];
-    } else {
-      m->zero_bias_mul[c] = 0.5f;
-    }
   }
 }
 

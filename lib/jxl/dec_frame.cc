@@ -5,7 +5,6 @@
 
 #include "lib/jxl/dec_frame.h"
 
-#include <jxl/types.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -16,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include "jxl/types.h"
 #include "lib/jxl/ac_context.h"
 #include "lib/jxl/ac_strategy.h"
 #include "lib/jxl/ans_params.h"

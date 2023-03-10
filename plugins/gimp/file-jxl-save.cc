@@ -5,9 +5,6 @@
 
 #include "plugins/gimp/file-jxl-save.h"
 
-#include <jxl/encode.h>
-#include <jxl/encode_cxx.h>
-
 #include <cmath>
 #include <utility>
 
