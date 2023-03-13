@@ -20,7 +20,7 @@ DISTANCE[10]=3.0
 
 mkdir -p work
 
-PSNRCMD=~/Documents/OpenHTJ2K/build/bin/imgcmp
+PSNRCMD=~/Documents/Clone/WG1/OpenHTJ2K/build-relwithdebinfo/bin/imgcmp
 ENC=build/tools/cjxl
 DEC=build/tools/djxl
 
