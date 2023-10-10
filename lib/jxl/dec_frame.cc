@@ -464,6 +464,9 @@ Status FrameDecoder::ProcessACGroup(size_t ac_group_id,
 
   bool should_run_pipeline = true;
 
+  // decrypt?
+  dec_state_->decrypt = this->decrypt; // PENCRYPT
+
   if (frame_header_.encoding == FrameEncoding::kVarDCT) {
     group_dec_caches_[thread].InitOnce(frame_header_.passes.num_passes,
                                        dec_state_->used_acs);

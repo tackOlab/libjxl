@@ -20,3 +20,4 @@ tools/conformance/__pycache__
 .idea/
 work/
 make_build.sh
+encrypt_test.sh

@@ -27,6 +27,23 @@
 #include "lib/jxl/quantizer-inl.h"
 #include "lib/jxl/quantizer.h"
 #include "lib/jxl/simd_util.h"
+
+// PENCRYPT
+#include <random>
+std::random_device seed_gen;
+std::mt19937 engine(seed_gen());
+std::uniform_real_distribution<> dist1(-1.0, 1.0);
+
+void ScrambleAC(int32_t *in, size_t xsize, size_t ysize, size_t kBlockDim) {
+  auto *p = in;
+  for (size_t i = 1; i < xsize * kBlockDim * ysize * kBlockDim; ++i) {
+    int32_t sgn = jxl::myrand(i);
+    // sgn = (sgn == 0) ? 1 : sgn;
+    p[i] *= sgn;
+    // p[i] = (i % 2 == 0) ? p[i] : -p[i];
+  }
+}
+
 HWY_BEFORE_NAMESPACE();
 namespace jxl {
 namespace HWY_NAMESPACE {
@@ -457,6 +474,12 @@ void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,
               acs.RawStrategy(), xblocks, yblocks, kDefaultQuantBias, &quant_ac,
               coeffs_in, quantized);
 
+          // PENCRYPT
+          if (enc_state->cparams.encrypt) {
+            srand(1 * xsize_blocks * ysize_blocks + by * xsize_blocks + bx);
+            ScrambleAC(quantized + size, xblocks, yblocks, kBlockDim);
+          }
+
           // Unapply color correlation
           for (size_t k = 0; k < size; k += Lanes(d)) {
             const auto in_x = Load(d, coeffs_in + k);
@@ -477,6 +500,11 @@ void ComputeCoefficients(size_t group_idx, PassesEncoderState* enc_state,
                             acs.RawStrategy(), xblocks, yblocks, &thres[0],
                             coeffs_in + c * size, &quant_ac,
                             quantized + c * size);
+            // PENCRYPT
+            if (enc_state->cparams.encrypt) {
+              srand(c * xsize_blocks * ysize_blocks + by * xsize_blocks + bx);
+              ScrambleAC(quantized + c * size, xblocks, yblocks, kBlockDim);
+            }
             DCFromLowestFrequencies(acs.Strategy(), coeffs_in + c * size,
                                     dc_rows[c] + bx, dc_stride);
           }

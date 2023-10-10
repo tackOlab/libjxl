@@ -344,6 +344,7 @@ typedef struct JxlDecoderFrameIndexBoxStruct {
 // NOLINTNEXTLINE(clang-analyzer-optin.performance.Padding)
 struct JxlDecoderStruct {
   JxlDecoderStruct() = default;
+  bool decrypt; // PENCRYPT
 
   JxlMemoryManager memory_manager;
   std::unique_ptr<jxl::ThreadPool> thread_pool;
@@ -1122,6 +1123,9 @@ JxlDecoderStatus JxlDecoderProcessSections(JxlDecoder* dec) {
     section_status.emplace_back();
     pos += size;
   }
+
+  dec->frame_dec->decrypt = dec->decrypt; // PENCRYPT
+
   jxl::Status status = dec->frame_dec->ProcessSections(
       section_info.data(), section_info.size(), section_status.data());
   bool out_of_bounds = false;
@@ -1438,6 +1442,8 @@ JxlDecoderStatus JxlDecoderProcessCodestream(JxlDecoder* dec) {
 
       JXL_API_RETURN_IF_ERROR(JxlDecoderProcessSections(dec));
 
+      dec->frame_dec->decrypt = dec->decrypt; // PENCRYPT
+
       bool all_sections_done = dec->frame_dec->HasDecodedAll();
       bool got_dc_only = !all_sections_done && dec->frame_dec->HasDecodedDC();
 
@@ -1539,6 +1545,11 @@ size_t JxlDecoderReleaseInput(JxlDecoder* dec) {
 }
 
 void JxlDecoderCloseInput(JxlDecoder* dec) { dec->input_closed = true; }
+
+// PENCRYPT
+void  JxlDecoderSetDecryption(JxlDecoder* dec, JXL_BOOL decrypt) {
+  dec->decrypt = (decrypt == 1) ? true : false;
+}
 
 JxlDecoderStatus JxlDecoderSetJPEGBuffer(JxlDecoder* dec, uint8_t* data,
                                          size_t size) {

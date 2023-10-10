@@ -45,6 +45,7 @@ class FrameDecoder {
         frame_header_(&metadata),
         use_slow_rendering_pipeline_(use_slow_rendering_pipeline) {}
 
+  bool decrypt; // PENCRYPT
   void SetRenderSpotcolors(bool rsc) { render_spotcolors_ = rsc; }
   void SetCoalescing(bool c) { coalescing_ = c; }
 

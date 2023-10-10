@@ -276,6 +276,12 @@ struct CompressArgs {
         &center_y, &ParseInt64, 2);
 
     // Flags.
+
+    // PENCRYPT
+    cmdline->AddOptionFlag('\0', "pencrypt",
+                           "Do perceputual encryption", &pencrypt,
+                           &SetBooleanTrue, 0);
+
     cmdline->AddOptionFlag('\0', "progressive_ac",
                            "Use the progressive mode for AC.", &progressive_ac,
                            &SetBooleanTrue, 2);
@@ -479,6 +485,7 @@ struct CompressArgs {
                             // or to VarDCT otherwise.
   bool verbose = false;
   bool progressive = false;
+  bool pencrypt = false; // PENCRYPT
   bool progressive_ac = false;
   bool qprogressive_ac = false;
   int64_t progressive_dc = -1;
@@ -781,6 +788,10 @@ void ProcessFlags(const jxl::extras::Codec codec,
               });
   ProcessFlag("progressive_ac", static_cast<int64_t>(args->progressive_ac),
               JXL_ENC_FRAME_SETTING_PROGRESSIVE_AC, params);
+
+  // PENCRYPT
+  ProcessFlag("pencrypt", static_cast<int64_t>(args->pencrypt),
+              JXL_ENC_FRAME_SETTING_ENCRYPT, params);
 
   if (args->progressive) {
     args->qprogressive_ac = true;
@@ -1092,5 +1103,6 @@ int main(int argc, char** argv) {
       cmdline.VerbosePrintf(0, "\n");
     }
   }
+  printf("%zu", compressed.size());
   return EXIT_SUCCESS;
 }

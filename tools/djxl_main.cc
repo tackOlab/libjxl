@@ -80,7 +80,9 @@ struct DecompressArgs {
                            "Verbose output; can be repeated and also applies "
                            "to help (!).",
                            &verbose, &SetBooleanTrue);
-
+    // PENCRYPT
+    cmdline->AddOptionFlag('\0', "decrypt", "Do Perceputual Decryption",
+                           &decrypt, &SetBooleanTrue);
     cmdline->AddHelpText("\nAdvanced options:", 1);
 
     cmdline->AddOptionValue('\0', "num_threads", "N",
@@ -231,7 +233,7 @@ struct DecompressArgs {
     }
     return true;
   }
-
+  bool decrypt = false; // PENCRYPT
   const char* file_in = nullptr;
   const char* file_out = nullptr;
   bool version = false;
@@ -377,6 +379,7 @@ bool DecompressJxlToPackedPixelFile(
   dparams.runner = JxlThreadParallelRunner;
   dparams.runner_opaque = runner;
   dparams.allow_partial_input = args.allow_partial_files;
+  dparams.decrypt = args.decrypt;
   dparams.need_icc = !args.icc_out.empty();
   if (args.bits_per_sample == 0) {
     dparams.output_bitdepth.type = JXL_BIT_DEPTH_FROM_CODESTREAM;

@@ -72,6 +72,7 @@ struct ImageOutput {
 // Per-frame decoder state. All the images here should be accessed through a
 // group rect (either with block units or pixel units).
 struct PassesDecoderState {
+  bool decrypt; // PENCRYPT
   PassesSharedState shared_storage;
   // Allows avoiding copies for encoder loop.
   const PassesSharedState* JXL_RESTRICT shared = &shared_storage;

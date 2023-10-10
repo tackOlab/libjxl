@@ -338,6 +338,19 @@ Status DecodeGroupImpl(GetBlock* JXL_RESTRICT get_block,
           continue;
         }
 
+        // PENCRYPT
+        if (dec_state->decrypt == true) {
+          // Perceputual Decryption
+          for (size_t c = 0; c < 3; ++c) {
+            auto* p = qblock[c].ptr16;
+            srand(c * xsize_blocks * ysize_blocks + by * xsize_blocks + bx);
+            for (size_t i = 1; i < size; ++i) {
+              int32_t sgn = myrand(i);
+              p[i] *= sgn;
+            }
+          }
+        }
+
         if (JXL_UNLIKELY(decoded->IsJPEG())) {
           if (acs.Strategy() != AcStrategy::Type::DCT) {
             return JXL_FAILURE(

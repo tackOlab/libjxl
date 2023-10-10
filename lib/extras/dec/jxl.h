@@ -22,6 +22,7 @@ namespace jxl {
 namespace extras {
 
 struct JXLDecompressParams {
+  bool decrypt = false; // PENCRYPT
   // If empty, little endian float formats will be accepted.
   std::vector<JxlPixelFormat> accepted_formats;
 

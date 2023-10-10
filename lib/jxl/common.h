@@ -25,6 +25,15 @@
 #endif  // JPEGXL_ENABLE_BOXES
 
 namespace jxl {
+// PENCRYPT
+static inline int myrand(int i) {
+  constexpr int max_n = 1;
+  constexpr int min_n = 0;
+  int new_n;
+  new_n = ((rand() % (max_n + 1 - min_n)) + min_n);
+  return new_n * 2 - 1;
+}
+
 // Some enums and typedefs used by more than one header file.
 
 // Maximum number of passes in an image.
